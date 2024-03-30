@@ -13,7 +13,7 @@ func TestEnvUseShouldCheckInstalled(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	env := NewMockEnv(ctrl)
-	env.EXPECT().Installed(gomock.Eq(version)).Times(1).Return(false)
+	env.EXPECT().Installed(gomock.Eq(version)).Times(1).Return(false, nil)
 	env.EXPECT().Install(gomock.Eq(version)).Times(1).Return(nil)
 	env.EXPECT().Use(gomock.Eq(version)).Times(1).Return(nil)
 

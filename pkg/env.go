@@ -1,15 +1,22 @@
 package pkg
 
 type Env interface {
-	Installed(version string) bool
+	Name() string
+	BinaryName() string
+	Installed(version string) (bool, error)
 	Install(version string) error
 	Use(version string) error
 	CurrentVersion() *string
+	CurrentBinaryPath() (string, error)
 }
 
 func Use(env Env, version string) error {
-	if !env.Installed(version) {
-		err := env.Install(version)
+	installed, err := env.Installed(version)
+	if err != nil {
+		return err
+	}
+	if !installed {
+		err = env.Install(version)
 		if err != nil {
 			return err
 		}
