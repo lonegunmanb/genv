@@ -2,10 +2,13 @@ package pkg
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/spf13/afero"
 	"os"
 	"path/filepath"
+
+	"github.com/blend/go-sdk/filelock"
+	"github.com/spf13/afero"
 )
 
 var _ Env = &DownloadableEnv{}
@@ -109,26 +112,39 @@ func (d *DownloadableEnv) lockPath() string {
 	return filepath.Join(d.homeDir, d.name, ".lock")
 }
 
+func (d *DownloadableEnv) ensureHomeDir() {
+	if _, err := os.Stat(d.homeDir); errors.Is(err, os.ErrNotExist) {
+		_ = os.MkdirAll(d.homeDir, 0755)
+	}
+}
+
 func (d *DownloadableEnv) lock() error {
 	if d.lockFile != nil {
 		return fmt.Errorf("this env has already been locked")
 	}
-	f, err := os.OpenFile(d.lockPath(), os.O_RDWR, 0)
+	lockPath := d.lockPath()
+	d.ensureHomeDir()
+	if _, err := os.Stat(lockPath); errors.Is(err, os.ErrNotExist) {
+		f, _ := os.Create(lockPath)
+		_ = f.Close()
+	}
+	f, err := os.OpenFile(lockPath, os.O_RDWR, 0666)
 	if err != nil {
 		return err
 	}
 	d.lockFile = f
-	return nil
+	return filelock.Lock(f)
 }
 
 func (d *DownloadableEnv) unlock() error {
 	if d.lockFile == nil {
 		return nil
 	}
-	//err := filelock.Unlock(d.lockFile)
-	//if err != nil {
-	//	return err
-	//}
+	if err := filelock.Unlock(d.lockFile); err != nil {
+		return err
+	}
+	f := d.lockFile
 	d.lockFile = nil
+	_ = os.Remove(f.Name())
 	return nil
 }

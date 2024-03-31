@@ -100,11 +100,11 @@ func (d *downloadableEnvSuite) TestUseNonExistVersionShouldThrowError() {
 
 func (d *downloadableEnvSuite) TestUseExistedVersionShouldWriteProfileFile() {
 	version := "v1.0.0"
-	sut := pkg.NewDownloadableEnv("", "~", "tfenv", "terraform")
-	profilePath := "~/tfenv/.profile.json"
+	sut := pkg.NewDownloadableEnv("", "/home/azureuser", "tfenv", "terraform")
+	profilePath := "/home/azureuser/tfenv/.profile.json"
 	d.files(map[string][]byte{
 		profilePath: []byte{},
-		fmt.Sprintf("~/tfenv/%s/terraform", version): []byte("fake"),
+		fmt.Sprintf("/home/azureuser/tfenv/%s/terraform", version): []byte("fake"),
 	})
 	err := sut.Use(version)
 	d.NoError(err)

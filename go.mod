@@ -15,3 +15,5 @@ require (
 	github.com/stretchr/testify v1.9.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+require github.com/blend/go-sdk v1.20220411.3 // indirect
