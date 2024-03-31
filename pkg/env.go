@@ -7,7 +7,7 @@ type Env interface {
 	Install(version string) error
 	Use(version string) error
 	CurrentVersion() (*string, error)
-	CurrentBinaryPath() (string, error)
+	CurrentBinaryPath() (*string, error)
 }
 
 func Use(env Env, version string) error {

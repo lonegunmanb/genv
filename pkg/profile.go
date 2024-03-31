@@ -1,5 +1,5 @@
 package pkg
 
 type Profile struct {
-	Version string `json:"version"`
+	Version *string `json:"version"`
 }

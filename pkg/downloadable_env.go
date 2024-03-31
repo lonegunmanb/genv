@@ -31,8 +31,17 @@ func NewDownloadableEnv(downloadUrlTemplate, homeDir, name, binaryName string) *
 	}
 }
 
-func (d *DownloadableEnv) CurrentBinaryPath() (string, error) {
-	panic("implement me")
+func (d *DownloadableEnv) CurrentBinaryPath() (*string, error) {
+	ver, err := d.CurrentVersion()
+	if err != nil {
+		return nil, err
+	}
+	if ver == nil {
+		return nil, nil
+	}
+
+	p := filepath.Join(d.homeDir, d.name, *ver, d.binaryName)
+	return &p, nil
 }
 
 func (d *DownloadableEnv) Name() string {
@@ -79,7 +88,7 @@ func (d *DownloadableEnv) Use(version string) error {
 	if profile == nil {
 		profile = &Profile{}
 	}
-	profile.Version = version
+	profile.Version = &version
 	profileContent, err := json.Marshal(profile)
 	if err != nil {
 		return err
@@ -95,7 +104,7 @@ func (d *DownloadableEnv) CurrentVersion() (*string, error) {
 	if profile == nil {
 		return nil, nil
 	}
-	return &profile.Version, nil
+	return profile.Version, nil
 }
 
 func (d *DownloadableEnv) binaryPath(version string) string {
@@ -128,8 +137,9 @@ func (d *DownloadableEnv) lockPath() string {
 }
 
 func (d *DownloadableEnv) ensureHomeDir() {
-	if _, err := os.Stat(d.homeDir); errors.Is(err, os.ErrNotExist) {
-		_ = os.MkdirAll(d.homeDir, 0755)
+	dir := filepath.Join(d.homeDir, d.name)
+	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
+		_ = os.MkdirAll(dir, 0755)
 	}
 }
 

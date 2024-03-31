@@ -100,11 +100,11 @@ func (d *downloadableEnvSuite) TestUseNonExistVersionShouldThrowError() {
 
 func (d *downloadableEnvSuite) TestUseExistedVersionShouldWriteProfileFile() {
 	version := "v1.0.0"
-	sut := pkg.NewDownloadableEnv("", "/home/azureuser", "tfenv", "terraform")
-	profilePath := "/home/azureuser/tfenv/.profile.json"
+	sut := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform")
+	profilePath := "/tmp/tfenv/.profile.json"
 	d.files(map[string][]byte{
 		profilePath: []byte{},
-		fmt.Sprintf("/home/azureuser/tfenv/%s/terraform", version): []byte("fake"),
+		fmt.Sprintf("/tmp/tfenv/%s/terraform", version): []byte("fake"),
 	})
 	err := sut.Use(version)
 	d.NoError(err)
@@ -113,14 +113,14 @@ func (d *downloadableEnvSuite) TestUseExistedVersionShouldWriteProfileFile() {
 	var profile pkg.Profile
 	err = json.Unmarshal(file, &profile)
 	d.NoError(err)
-	d.Equal(version, profile.Version)
+	d.Equal(version, *profile.Version)
 }
 
 func (d *downloadableEnvSuite) TestGetCurrentAfterUseShouldReturnUsedVersion() {
 	version := "v1.0.0"
-	sut := pkg.NewDownloadableEnv("", "/home/azureuser", "tfenv", "terraform")
+	sut := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform")
 	d.files(map[string][]byte{
-		fmt.Sprintf("/home/azureuser/tfenv/%s/terraform", version): []byte("fake"),
+		fmt.Sprintf("/tmp/tfenv/%s/terraform", version): []byte("fake"),
 	})
 	err := sut.Use(version)
 	d.NoError(err)
@@ -130,8 +130,29 @@ func (d *downloadableEnvSuite) TestGetCurrentAfterUseShouldReturnUsedVersion() {
 }
 
 func (d *downloadableEnvSuite) TestGetCurrentBeforeUseShouldReturnNil() {
-	sut := pkg.NewDownloadableEnv("", "/home/azureuser", "tfenv", "terraform")
+	sut := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform")
 	currentVersion, err := sut.CurrentVersion()
 	d.NoError(err)
 	d.Nil(currentVersion)
+}
+
+func (d *downloadableEnvSuite) TestCurrentBinaryPath_Installed() {
+	version := "v1.0.0"
+	sut := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform")
+	d.files(map[string][]byte{
+		fmt.Sprintf("/tmp/tfenv/%s/terraform", version): []byte("fake"),
+	})
+	err := sut.Use(version)
+	d.NoError(err)
+	actual, err := sut.CurrentBinaryPath()
+	d.NoError(err)
+	d.NotNil(actual)
+	d.Equal("/tmp/tfenv/v1.0.0/terraform", *actual)
+}
+
+func (d *downloadableEnvSuite) TestCurrentBinaryPath_NotInstalled() {
+	sut := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform")
+	actual, err := sut.CurrentBinaryPath()
+	d.NoError(err)
+	d.Nil(actual)
 }
