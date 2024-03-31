@@ -1,11 +1,16 @@
 package pkg
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	getter2 "github.com/hashicorp/go-getter/v2"
 	"os"
 	"path/filepath"
+	"runtime"
+	"text/template"
 
 	"github.com/blend/go-sdk/filelock"
 	"github.com/spf13/afero"
@@ -14,21 +19,36 @@ import (
 var _ Env = &DownloadableEnv{}
 var Fs = afero.NewOsFs()
 
+type downloadArgument struct {
+	Version string
+	Os      string
+	Arch    string
+}
+
 type DownloadableEnv struct {
 	downloadUrlTemplate string
 	homeDir             string
 	name                string
 	binaryName          string
 	lockFile            *os.File
+	ctx                 context.Context
 }
 
-func NewDownloadableEnv(downloadUrlTemplate, homeDir, name, binaryName string) *DownloadableEnv {
-	return &DownloadableEnv{
+func NewDownloadableEnv(downloadUrlTemplate, homeDir, name, binaryName string, ctx context.Context) (*DownloadableEnv, error) {
+	if ctx == nil {
+		ctx = context.TODO()
+	}
+	d := &DownloadableEnv{
 		downloadUrlTemplate: downloadUrlTemplate,
 		homeDir:             homeDir,
 		name:                name,
 		binaryName:          binaryName,
+		ctx:                 ctx,
 	}
+	if err := d.validUrlTemplate(downloadUrlTemplate); err != nil {
+		return nil, err
+	}
+	return d, nil
 }
 
 func (d *DownloadableEnv) CurrentBinaryPath() (*string, error) {
@@ -61,8 +81,22 @@ func (d *DownloadableEnv) Installed(version string) (bool, error) {
 }
 
 func (d *DownloadableEnv) Install(version string) error {
-	//TODO implement me
-	panic("implement me")
+	installed, err := d.Installed(version)
+	if err != nil {
+		return err
+	}
+	if installed {
+		return nil
+	}
+	getter := getter2.DefaultClient
+	_, err = getter.Get(d.ctx, &getter2.Request{
+		Src:             d.DownloadUrl(version),
+		Dst:             filepath.Dir(d.binaryPath(version)),
+		GetMode:         getter2.ModeAny,
+		Copy:            true,
+		DisableSymlinks: true,
+	})
+	return err
 }
 
 func (d *DownloadableEnv) Use(version string) error {
@@ -105,6 +139,32 @@ func (d *DownloadableEnv) CurrentVersion() (*string, error) {
 		return nil, nil
 	}
 	return profile.Version, nil
+}
+
+func (d *DownloadableEnv) DownloadUrl(version string) string {
+	arg := downloadArgument{
+		Os:      runtime.GOOS,
+		Arch:    runtime.GOARCH,
+		Version: version,
+	}
+	var buff bytes.Buffer
+	tplt, _ := template.New("download").Parse(d.downloadUrlTemplate)
+	_ = tplt.Execute(&buff, arg)
+	return buff.String()
+}
+
+func (d *DownloadableEnv) validUrlTemplate(templateString string) error {
+	arg := downloadArgument{
+		Os:      runtime.GOOS,
+		Arch:    runtime.GOARCH,
+		Version: "1.0.0",
+	}
+	var buff bytes.Buffer
+	tplt, err := template.New("download").Parse(templateString)
+	if err != nil {
+		return err
+	}
+	return tplt.Execute(&buff, arg)
 }
 
 func (d *DownloadableEnv) binaryPath(version string) string {
