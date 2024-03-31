@@ -76,6 +76,9 @@ func (d *DownloadableEnv) Use(version string) error {
 	if err != nil {
 		return err
 	}
+	if profile == nil {
+		profile = &Profile{}
+	}
 	profile.Version = version
 	profileContent, err := json.Marshal(profile)
 	if err != nil {
@@ -84,28 +87,40 @@ func (d *DownloadableEnv) Use(version string) error {
 	return afero.WriteFile(Fs, profilePath, profileContent, os.ModePerm)
 }
 
-func (d *DownloadableEnv) CurrentVersion() *string {
-	//TODO implement me
-	panic("implement me")
+func (d *DownloadableEnv) CurrentVersion() (*string, error) {
+	profile, err := d.profile()
+	if err != nil {
+		return nil, err
+	}
+	if profile == nil {
+		return nil, nil
+	}
+	return &profile.Version, nil
 }
 
 func (d *DownloadableEnv) binaryPath(version string) string {
 	return filepath.Join(d.homeDir, d.name, version, d.binaryName)
 }
 
-func (d *DownloadableEnv) profile() (Profile, error) {
-	profileContent, err := afero.ReadFile(Fs, fmt.Sprintf("%s", d.profilePath()))
+func (d *DownloadableEnv) profile() (*Profile, error) {
+	exist, err := afero.Exists(Fs, d.profilePath())
 	if err != nil {
-		return Profile{}, err
+		return nil, err
+	}
+	if !exist {
+		return nil, nil
+	}
+	profileContent, err := afero.ReadFile(Fs, d.profilePath())
+	if err != nil {
+		return nil, err
 	}
 	var profile Profile
 	_ = json.Unmarshal(profileContent, &profile)
-	return profile, nil
+	return &profile, nil
 }
 
 func (d *DownloadableEnv) profilePath() string {
-	profilePath := filepath.Join(d.homeDir, d.name, ".profile.json")
-	return profilePath
+	return filepath.Join(d.homeDir, d.name, ".profile.json")
 }
 
 func (d *DownloadableEnv) lockPath() string {

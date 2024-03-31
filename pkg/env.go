@@ -6,7 +6,7 @@ type Env interface {
 	Installed(version string) (bool, error)
 	Install(version string) error
 	Use(version string) error
-	CurrentVersion() *string
+	CurrentVersion() (*string, error)
 	CurrentBinaryPath() (string, error)
 }
 

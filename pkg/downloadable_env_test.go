@@ -115,3 +115,23 @@ func (d *downloadableEnvSuite) TestUseExistedVersionShouldWriteProfileFile() {
 	d.NoError(err)
 	d.Equal(version, profile.Version)
 }
+
+func (d *downloadableEnvSuite) TestGetCurrentAfterUseShouldReturnUsedVersion() {
+	version := "v1.0.0"
+	sut := pkg.NewDownloadableEnv("", "/home/azureuser", "tfenv", "terraform")
+	d.files(map[string][]byte{
+		fmt.Sprintf("/home/azureuser/tfenv/%s/terraform", version): []byte("fake"),
+	})
+	err := sut.Use(version)
+	d.NoError(err)
+	currentVersion, err := sut.CurrentVersion()
+	d.NoError(err)
+	d.Equal(version, *currentVersion)
+}
+
+func (d *downloadableEnvSuite) TestGetCurrentBeforeUseShouldReturnNil() {
+	sut := pkg.NewDownloadableEnv("", "/home/azureuser", "tfenv", "terraform")
+	currentVersion, err := sut.CurrentVersion()
+	d.NoError(err)
+	d.Nil(currentVersion)
+}
