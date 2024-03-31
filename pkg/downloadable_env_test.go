@@ -1,6 +1,7 @@
 package pkg_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/lonegunmanb/genv/pkg"
 	"github.com/prashantv/gostub"
@@ -64,6 +65,20 @@ func (d *downloadableEnvSuite) TestDownloadableEnv_Installed() {
 			},
 			expected: false,
 		},
+		{
+			desc: "not installed, no version folder",
+			fs: map[string][]byte{
+				"~/tfenv/.lock": []byte("fake"),
+			},
+			expected: false,
+		},
+		{
+			desc: "not installed, env",
+			fs: map[string][]byte{
+				"~/.lock": []byte("fake"),
+			},
+			expected: false,
+		},
 	}
 	for _, c := range cases {
 		cc := c
@@ -74,4 +89,29 @@ func (d *downloadableEnvSuite) TestDownloadableEnv_Installed() {
 			d.Equal(cc.expected, actual)
 		})
 	}
+}
+
+func (d *downloadableEnvSuite) TestUseNonExistVersionShouldThrowError() {
+	sut := pkg.NewDownloadableEnv("", "~", "tfenv", "terraform")
+	err := sut.Use("v1.0.0")
+	d.NotNil(err)
+	d.Contains(err.Error(), "not installed")
+}
+
+func (d *downloadableEnvSuite) TestUseExistedVersionShouldWriteProfileFile() {
+	version := "v1.0.0"
+	sut := pkg.NewDownloadableEnv("", "~", "tfenv", "terraform")
+	profilePath := "~/tfenv/.profile.json"
+	d.files(map[string][]byte{
+		profilePath: []byte{},
+		fmt.Sprintf("~/tfenv/%s/terraform", version): []byte("fake"),
+	})
+	err := sut.Use(version)
+	d.NoError(err)
+	file, err := afero.ReadFile(d.mockFs, profilePath)
+	d.NoError(err)
+	var profile pkg.Profile
+	err = json.Unmarshal(file, &profile)
+	d.NoError(err)
+	d.Equal(version, profile.Version)
 }

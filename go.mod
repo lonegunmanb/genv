@@ -2,11 +2,10 @@ module github.com/lonegunmanb/genv
 
 go 1.22
 
-require go.uber.org/mock v0.4.0
-
 require (
 	github.com/prashantv/gostub v1.1.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
+	go.uber.org/mock v0.4.0
 	golang.org/x/text v0.14.0 // indirect
 )
 
