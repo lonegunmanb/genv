@@ -153,7 +153,7 @@ func (d *downloadableEnvSuite) TestCurrentBinaryPath_Installed() {
 	actual, err := sut.CurrentBinaryPath()
 	d.NoError(err)
 	d.NotNil(actual)
-	d.Equal("/tmp/tfenv/v1.0.0/terraform", *actual)
+	d.Equal(filepath.Join(string(filepath.Separator), "tmp", "tfenv", version, "terraform"), *actual)
 }
 
 func (d *downloadableEnvSuite) TestCurrentBinaryPath_NotInstalled() {

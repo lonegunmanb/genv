@@ -7,12 +7,12 @@ import (
 	"errors"
 	"fmt"
 	getter2 "github.com/hashicorp/go-getter/v2"
+	"github.com/xianic/fslock"
 	"os"
 	"path/filepath"
 	"runtime"
 	"text/template"
 
-	"github.com/blend/go-sdk/filelock"
 	"github.com/spf13/afero"
 )
 
@@ -30,7 +30,7 @@ type DownloadableEnv struct {
 	homeDir             string
 	name                string
 	binaryName          string
-	lockFile            *os.File
+	l                   *fslock.Lock
 	ctx                 context.Context
 }
 
@@ -204,32 +204,27 @@ func (d *DownloadableEnv) ensureHomeDir() {
 }
 
 func (d *DownloadableEnv) lock() error {
-	if d.lockFile != nil {
+	if d.l != nil {
 		return fmt.Errorf("this env has already been locked")
 	}
 	lockPath := d.lockPath()
 	d.ensureHomeDir()
-	if _, err := os.Stat(lockPath); errors.Is(err, os.ErrNotExist) {
-		f, _ := os.Create(lockPath)
-		_ = f.Close()
-	}
-	f, err := os.OpenFile(lockPath, os.O_RDWR, 0666)
+	lock := fslock.New(lockPath)
+	err := lock.Lock()
 	if err != nil {
 		return err
 	}
-	d.lockFile = f
-	return filelock.Lock(f)
+	d.l = lock
+	return nil
 }
 
 func (d *DownloadableEnv) unlock() error {
-	if d.lockFile == nil {
+	if d.l == nil {
 		return nil
 	}
-	if err := filelock.Unlock(d.lockFile); err != nil {
+	if err := d.l.Unlock(); err != nil {
 		return err
 	}
-	f := d.lockFile
-	d.lockFile = nil
-	_ = os.Remove(f.Name())
+	d.l = nil
 	return nil
 }
