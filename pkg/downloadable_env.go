@@ -18,6 +18,7 @@ import (
 
 var _ Env = &DownloadableEnv{}
 var Fs = afero.NewOsFs()
+var Os = runtime.GOOS
 
 type downloadArgument struct {
 	Version string
@@ -60,7 +61,12 @@ func (d *DownloadableEnv) CurrentBinaryPath() (*string, error) {
 		return nil, nil
 	}
 
-	p := filepath.Join(d.homeDir, d.name, *ver, d.binaryName)
+	binaryName := d.binaryName
+	if Os == "windows" {
+		binaryName = fmt.Sprintf("%s.exe", binaryName)
+	}
+
+	p := filepath.Join(d.homeDir, d.name, *ver, binaryName)
 	return &p, nil
 }
 
@@ -73,7 +79,8 @@ func (d *DownloadableEnv) BinaryName() string {
 }
 
 func (d *DownloadableEnv) Installed(version string) (bool, error) {
-	b, err := afero.Exists(Fs, d.binaryPath(version))
+	path := d.binaryPath(version)
+	b, err := afero.Exists(Fs, path)
 	if err != nil {
 		return false, err
 	}
@@ -168,7 +175,11 @@ func (d *DownloadableEnv) validUrlTemplate(templateString string) error {
 }
 
 func (d *DownloadableEnv) binaryPath(version string) string {
-	return filepath.Join(d.homeDir, d.name, version, d.binaryName)
+	binaryName := d.binaryName
+	if Os == "windows" {
+		binaryName = fmt.Sprintf("%s.exe", binaryName)
+	}
+	return filepath.Join(d.homeDir, d.name, version, binaryName)
 }
 
 func (d *DownloadableEnv) profile() (*Profile, error) {

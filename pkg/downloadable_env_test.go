@@ -29,7 +29,8 @@ func TestDownloadableEnv(t *testing.T) {
 
 func (d *downloadableEnvSuite) SetupTest() {
 	d.mockFs = afero.NewMemMapFs()
-	d.stub = gostub.Stub(&pkg.Fs, d.mockFs)
+	d.stub = gostub.Stub(&pkg.Fs, d.mockFs).
+		Stub(&pkg.Os, "linux")
 }
 
 func (d *downloadableEnvSuite) SetupSubTest() {
@@ -97,6 +98,16 @@ func (d *downloadableEnvSuite) TestDownloadableEnv_Installed() {
 	}
 }
 
+func (d *downloadableEnvSuite) TestInstalled_Windows() {
+	stub := gostub.Stub(&pkg.Os, "windows")
+	defer stub.Reset()
+	d.files(map[string][]byte{
+		filepath.Join("/tmp", "tfenv", "v1.0.0", "terraform.exe"): []byte("fake"),
+	})
+	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
+	d.True(sut.Installed("v1.0.0"))
+}
+
 func (d *downloadableEnvSuite) TestUseNonExistVersionShouldThrowError() {
 	sut, _ := pkg.NewDownloadableEnv("", "~", "tfenv", "terraform", nil)
 	err := sut.Use("v1.0.0")
@@ -154,6 +165,22 @@ func (d *downloadableEnvSuite) TestCurrentBinaryPath_Installed() {
 	d.NoError(err)
 	d.NotNil(actual)
 	d.Equal(filepath.Join(string(filepath.Separator), "tmp", "tfenv", version, "terraform"), *actual)
+}
+
+func (d *downloadableEnvSuite) TestCurrentBinaryPath_Installed_Windows() {
+	stub := gostub.Stub(&pkg.Os, "windows")
+	defer stub.Reset()
+	version := "v1.0.0"
+	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
+	d.files(map[string][]byte{
+		fmt.Sprintf("/tmp/tfenv/%s/terraform.exe", version): []byte("fake"),
+	})
+	err := sut.Use(version)
+	d.NoError(err)
+	actual, err := sut.CurrentBinaryPath()
+	d.NoError(err)
+	d.NotNil(actual)
+	d.Equal(filepath.Join(string(filepath.Separator), "tmp", "tfenv", version, "terraform.exe"), *actual)
 }
 
 func (d *downloadableEnvSuite) TestCurrentBinaryPath_NotInstalled() {
