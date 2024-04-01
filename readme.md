@@ -54,3 +54,15 @@ Vault v1.6.0
 ## Getting Started
 
 To get started with `genv`, clone this template repository and navigate into the `generate` directory. Then, run the `go run` command with the appropriate flags to install the binaries and manage your environments.
+
+To run the test, you must install [gomock](https://github.com/uber-go/mock) first:
+
+```shell
+go install go.uber.org/mock/mockgen@latest
+```
+
+Then run:
+
+```shell
+go generate ./...
+```
