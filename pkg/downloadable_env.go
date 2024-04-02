@@ -35,6 +35,17 @@ type DownloadableEnv struct {
 	ctx                 context.Context
 }
 
+func (d *DownloadableEnv) Uninstall(version string) error {
+	installed, err := d.Installed(version)
+	if err != nil {
+		return err
+	}
+	if !installed {
+		return nil
+	}
+	return Fs.RemoveAll(filepath.Dir(d.binaryPath(version)))
+}
+
 func NewDownloadableEnv(downloadUrlTemplate, homeDir, name, binaryName string, ctx context.Context) (*DownloadableEnv, error) {
 	if ctx == nil {
 		ctx = context.TODO()
@@ -111,7 +122,7 @@ func (d *DownloadableEnv) Use(version string) error {
 	if err != nil {
 		return err
 	}
-	if !installed {
+	if !installed && version != "" {
 		return fmt.Errorf("version %s not installed, please install it first", version)
 	}
 	err = d.lock()
@@ -129,7 +140,11 @@ func (d *DownloadableEnv) Use(version string) error {
 	if profile == nil {
 		profile = &Profile{}
 	}
-	profile.Version = &version
+	pv := &version
+	if version == "" {
+		pv = nil
+	}
+	profile.Version = pv
 	profileContent, err := json.Marshal(profile)
 	if err != nil {
 		return err

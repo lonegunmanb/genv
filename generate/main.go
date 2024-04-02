@@ -56,7 +56,7 @@ func main() {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			version := args[0]
 			fmt.Printf("Using version: %s\n", version)
-			return env.Use(version)
+			return pkg.Use(env, version)
 		},
 	}
 
@@ -80,10 +80,10 @@ func main() {
 		Use:   "uninstall [version]",
 		Short: "Uninstall a specific version",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			version := args[0]
 			fmt.Printf("Uninstalling version: %s\n", version)
-			// Implement the uninstallation logic here
+			return pkg.Uninstall(env, version)
 		},
 	}
 
@@ -168,7 +168,9 @@ func main() {
 			if err != nil {
 				return err
 			}
-			defer file.Close()
+			defer func() {
+				_ = file.Close()
+			}()
 			envData := struct {
 				DownloadUrlTemplate string
 				HomeDir             string
@@ -206,7 +208,9 @@ func main() {
 			if err != nil {
 				return err
 			}
-			defer file.Close()
+			defer func() {
+				_ = file.Close()
+			}()
 
 			// Execute the template with envData and write the output to the file
 			err = tplt.Execute(file, envData)
@@ -258,7 +262,9 @@ func replaceFirstLine(newLine string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	// Read all lines into a slice
 	scanner := bufio.NewScanner(file)
@@ -275,12 +281,14 @@ func replaceFirstLine(newLine string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	// Write the updated lines back to the file
 	writer := bufio.NewWriter(file)
 	for _, line := range lines {
-		fmt.Fprintln(writer, line)
+		_, _ = fmt.Fprintln(writer, line)
 	}
 	return writer.Flush()
 }

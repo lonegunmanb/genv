@@ -4,17 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"testing"
+
 	"github.com/lonegunmanb/genv/pkg"
 	"github.com/prashantv/gostub"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime"
-	"testing"
 )
 
 type downloadableEnvSuite struct {
@@ -120,7 +121,7 @@ func (d *downloadableEnvSuite) TestUseExistedVersionShouldWriteProfileFile() {
 	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
 	profilePath := "/tmp/tfenv/.profile.json"
 	d.files(map[string][]byte{
-		profilePath: []byte{},
+		profilePath: {},
 		fmt.Sprintf("/tmp/tfenv/%s/terraform", version): []byte("fake"),
 	})
 	err := sut.Use(version)
@@ -131,6 +132,22 @@ func (d *downloadableEnvSuite) TestUseExistedVersionShouldWriteProfileFile() {
 	err = json.Unmarshal(file, &profile)
 	d.NoError(err)
 	d.Equal(version, *profile.Version)
+}
+
+func (d *downloadableEnvSuite) TestUseEmptyVersionShouldRemoveVersionFromProfile() {
+	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
+	profilePath := "/tmp/tfenv/.profile.json"
+	d.files(map[string][]byte{
+		profilePath: []byte(`{"version":"v1.0.0"}`),
+	})
+	err := sut.Use("")
+	d.NoError(err)
+	file, err := afero.ReadFile(d.mockFs, profilePath)
+	d.NoError(err)
+	var profile pkg.Profile
+	err = json.Unmarshal(file, &profile)
+	d.NoError(err)
+	d.Nil(profile.Version)
 }
 
 func (d *downloadableEnvSuite) TestGetCurrentAfterUseShouldReturnUsedVersion() {
@@ -259,4 +276,34 @@ func TestInstall_Install(t *testing.T) {
 	err = json.Unmarshal(output, &outputMap)
 	require.NoError(t, err)
 	assert.Equal(t, version, outputMap["terraform_version"])
+}
+
+func (d *downloadableEnvSuite) TestUninstall_Installed() {
+	version := "v1.0.0"
+	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
+	binaryPath := fmt.Sprintf("/tmp/tfenv/%s/terraform", version)
+	d.files(map[string][]byte{
+		binaryPath: []byte("fake"),
+	})
+	err := sut.Uninstall(version)
+	d.NoError(err)
+	exists, err := afero.Exists(d.mockFs, "/tmp/tfenv/v1.0.0/terraform")
+	require.NoError(d.T(), err)
+	d.False(exists)
+	exists, err = afero.Exists(d.mockFs, "/tmp/tfenv/v1.0.0")
+	require.NoError(d.T(), err)
+	d.False(exists)
+}
+
+func (d *downloadableEnvSuite) TestUninstall_NotInstalled() {
+	version := "v1.0.0"
+	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
+	err := sut.Uninstall(version)
+	d.NoError(err)
+	exists, err := afero.Exists(d.mockFs, "/tmp/tfenv/v1.0.0/terraform")
+	require.NoError(d.T(), err)
+	d.False(exists)
+	exists, err = afero.Exists(d.mockFs, "/tmp/tfenv/v1.0.0")
+	require.NoError(d.T(), err)
+	d.False(exists)
 }

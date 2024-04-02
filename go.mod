@@ -17,8 +17,9 @@ require (
 )
 
 require (
-	github.com/blend/go-sdk v1.20220411.3
 	github.com/hashicorp/go-getter/v2 v2.2.1
+	github.com/spf13/cobra v1.8.0
+	github.com/xianic/fslock v1.0.1
 )
 
 require (
@@ -32,9 +33,7 @@ require (
 	github.com/klauspost/compress v1.11.2 // indirect
 	github.com/mitchellh/go-homedir v1.0.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
-	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/ulikunitz/xz v0.5.8 // indirect
-	github.com/xianic/fslock v1.0.1 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 )
