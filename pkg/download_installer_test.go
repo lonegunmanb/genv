@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,50 +14,52 @@ import (
 	"github.com/lonegunmanb/genv/pkg"
 	"github.com/prashantv/gostub"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-type downloadableEnvSuite struct {
+type downloadInstallerSuite struct {
 	suite.Suite
 	stub   *gostub.Stubs
 	mockFs afero.Fs
 }
 
-func TestDownloadableEnv(t *testing.T) {
-	suite.Run(t, new(downloadableEnvSuite))
+func TestDownloadInstaller(t *testing.T) {
+	suite.Run(t, new(downloadInstallerSuite))
 }
 
-func (d *downloadableEnvSuite) SetupTest() {
+func (d *downloadInstallerSuite) SetupTest() {
 	d.mockFs = afero.NewMemMapFs()
 	d.stub = gostub.Stub(&pkg.Fs, d.mockFs).
 		Stub(&pkg.Os, "linux")
 }
 
-func (d *downloadableEnvSuite) SetupSubTest() {
+func (d *downloadInstallerSuite) SetupSubTest() {
 	d.SetupTest()
 }
 
-func (d *downloadableEnvSuite) TearDownTest() {
+func (d *downloadInstallerSuite) TearDownTest() {
 	d.stub.Reset()
 }
 
-func (d *downloadableEnvSuite) TearDownSubTest() {
+func (d *downloadInstallerSuite) TearDownSubTest() {
 	d.TearDownTest()
 }
 
-func (d *downloadableEnvSuite) files(fs map[string][]byte) {
+func (d *downloadInstallerSuite) files(fs map[string][]byte) {
 	for k, v := range fs {
 		_ = afero.WriteFile(d.mockFs, k, v, os.FileMode(644))
 	}
 }
 
-func (d *downloadableEnvSuite) TestInstall_DownloadUrl() {
+func (d *downloadInstallerSuite) TestInstall_DownloadUrl() {
 	version := "1.7.5"
 	sut, _ := pkg.NewDownloadInstaller("https://releases.hashicorp.com/terraform/{{ .Version }}/terraform_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip", nil)
 	d.Equal(fmt.Sprintf("https://releases.hashicorp.com/terraform/%s/terraform_%s_%s_%s.zip", version, version, runtime.GOOS, runtime.GOARCH), sut.DownloadUrl(version))
 }
 
-func (d *downloadableEnvSuite) TestIncorrectDownloadUrlTemplateShouldReturnError() {
+func (d *downloadInstallerSuite) TestIncorrectDownloadUrlTemplateShouldReturnError() {
 	incorrectCases := []struct {
 		desc string
 		url  string
