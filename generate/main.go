@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -165,11 +164,12 @@ func main() {
 				return err
 			}
 			binaryEnvDir := filepath.Join(pwd, "..", name)
-			if _, err = os.Stat(binaryEnvDir); os.IsNotExist(err) {
-				err = os.Mkdir(binaryEnvDir, 0755)
-				if err != nil {
-					return err
-				}
+			if _, err = os.Stat(binaryEnvDir); err == nil {
+				_ = os.RemoveAll(binaryEnvDir)
+			}
+			err = os.Mkdir(binaryEnvDir, 0755)
+			if err != nil {
+				return err
 			}
 			dst := filepath.Clean(filepath.Join(binaryEnvDir, "main.go"))
 			file, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
@@ -203,11 +203,12 @@ func main() {
 
 			// Check if the directory ../{binaryName} exists, if not create it
 			dirPath := filepath.Join(pwd, "..", binaryName)
-			if _, err = os.Stat(dirPath); os.IsNotExist(err) {
-				err = os.Mkdir(dirPath, 0755)
-				if err != nil {
-					return err
-				}
+			if _, err = os.Stat(dirPath); err == nil {
+				_ = os.RemoveAll(dirPath)
+			}
+			err = os.Mkdir(dirPath, 0755)
+			if err != nil {
+				return err
 			}
 
 			// Open the file ../{name}/main.go in write mode
@@ -226,34 +227,21 @@ func main() {
 				return err
 			}
 
-			//err = replaceFirstLine(fmt.Sprintf("module %s", name))
-			//if err != nil {
-			//	return err
-			//}
-			// Run 'go install' in the root folder
-			goModInitCmd := exec.Command("go", "mod", "init", binaryName)
-			goModInitCmd.Dir = binaryEnvDir
-			err = goModInitCmd.Run()
+			err = executeCommand(binaryEnvDir, "go", "mod", "init", name)
 			if err != nil {
 				return fmt.Errorf("failed to run 'go mod init' in the env folder: %w", err)
 			}
-			goModTidyCmd := exec.Command("go", "mod", "tidy")
-			goModTidyCmd.Dir = binaryEnvDir
-			err = goModTidyCmd.Run()
+			err = executeCommand(binaryEnvDir, "go", "mod", "tidy")
 			if err != nil {
 				return fmt.Errorf("failed to run 'go mod tidy' in the env folder: %w", err)
 			}
-			installCmd := exec.Command("go", "install")
-			installCmd.Dir = binaryEnvDir
-			err = installCmd.Run()
+			err = executeCommand(binaryEnvDir, "go", "install")
 			if err != nil {
 				return fmt.Errorf("failed to run 'go install' in the env folder: %w", err)
 			}
 
 			// Run 'go install' in the ../{name} folder
-			installCmd = exec.Command("go", "install")
-			installCmd.Dir = dirPath
-			err = installCmd.Run()
+			err = executeCommand(dirPath, "go", "install")
 			if err != nil {
 				return fmt.Errorf("failed to run 'go install' in the ../%s folder: %w", name, err)
 			}
@@ -271,44 +259,8 @@ func main() {
 	}
 }
 
-func replaceFirstLine(newLine string) error {
-	// Open the file in read mode
-	dir, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	gomodPath := filepath.Join(dir, "..", "go.mod")
-	file, err := os.Open(gomodPath)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = file.Close()
-	}()
-
-	// Read all lines into a slice
-	scanner := bufio.NewScanner(file)
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	// Replace the first line
-	lines[0] = newLine
-
-	// Open the file in write mode
-	file, err = os.Create(gomodPath)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = file.Close()
-	}()
-
-	// Write the updated lines back to the file
-	writer := bufio.NewWriter(file)
-	for _, line := range lines {
-		_, _ = fmt.Fprintln(writer, line)
-	}
-	return writer.Flush()
+func executeCommand(wd string, name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	cmd.Dir = wd
+	return cmd.Run()
 }
