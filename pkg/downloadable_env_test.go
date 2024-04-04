@@ -1,9 +1,12 @@
 package pkg_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,8 +16,6 @@ import (
 	"github.com/lonegunmanb/genv/pkg"
 	"github.com/prashantv/gostub"
 	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -52,178 +53,9 @@ func (d *downloadableEnvSuite) files(fs map[string][]byte) {
 	}
 }
 
-func (d *downloadableEnvSuite) TestDownloadableEnv_Installed() {
-	ver := "v1.0.0"
-	cases := []struct {
-		desc     string
-		fs       map[string][]byte
-		expected bool
-	}{
-		{
-			desc: "installed",
-			fs: map[string][]byte{
-				fmt.Sprintf("~/tfenv/%s/terraform", ver): []byte("fake"),
-			},
-			expected: true,
-		},
-		{
-			desc: "not installed",
-			fs: map[string][]byte{
-				"~/tfenv/v1.0.1/terraform": []byte("fake"),
-			},
-			expected: false,
-		},
-		{
-			desc: "not installed, no version folder",
-			fs: map[string][]byte{
-				"~/tfenv/.lock": []byte("fake"),
-			},
-			expected: false,
-		},
-		{
-			desc: "not installed, env",
-			fs: map[string][]byte{
-				"~/.lock": []byte("fake"),
-			},
-			expected: false,
-		},
-	}
-	for _, c := range cases {
-		cc := c
-		d.Run(cc.desc, func() {
-			d.files(cc.fs)
-			sut, _ := pkg.NewDownloadableEnv("", "~", "tfenv", "terraform", nil)
-			actual, _ := sut.Installed(ver)
-			d.Equal(cc.expected, actual)
-		})
-	}
-}
-
-func (d *downloadableEnvSuite) TestInstalled_Windows() {
-	stub := gostub.Stub(&pkg.Os, "windows")
-	defer stub.Reset()
-	d.files(map[string][]byte{
-		filepath.Join("/tmp", "tfenv", "v1.0.0", "terraform.exe"): []byte("fake"),
-	})
-	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
-	d.True(sut.Installed("v1.0.0"))
-}
-
-func (d *downloadableEnvSuite) TestUseNonExistVersionShouldThrowError() {
-	sut, _ := pkg.NewDownloadableEnv("", "~", "tfenv", "terraform", nil)
-	err := sut.Use("v1.0.0")
-	d.NotNil(err)
-	d.Contains(err.Error(), "not installed")
-}
-
-func (d *downloadableEnvSuite) TestUseExistedVersionShouldWriteProfileFile() {
-	version := "v1.0.0"
-	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
-	profilePath := "/tmp/tfenv/.profile.json"
-	d.files(map[string][]byte{
-		profilePath: {},
-		fmt.Sprintf("/tmp/tfenv/%s/terraform", version): []byte("fake"),
-	})
-	err := sut.Use(version)
-	d.NoError(err)
-	file, err := afero.ReadFile(d.mockFs, profilePath)
-	d.NoError(err)
-	var profile pkg.Profile
-	err = json.Unmarshal(file, &profile)
-	d.NoError(err)
-	d.Equal(version, *profile.Version)
-}
-
-func (d *downloadableEnvSuite) TestUseEmptyVersionShouldRemoveVersionFromProfile() {
-	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
-	profilePath := "/tmp/tfenv/.profile.json"
-	d.files(map[string][]byte{
-		profilePath: []byte(`{"version":"v1.0.0"}`),
-	})
-	err := sut.Use("")
-	d.NoError(err)
-	file, err := afero.ReadFile(d.mockFs, profilePath)
-	d.NoError(err)
-	var profile pkg.Profile
-	err = json.Unmarshal(file, &profile)
-	d.NoError(err)
-	d.Nil(profile.Version)
-}
-
-func (d *downloadableEnvSuite) TestGetCurrentAfterUseShouldReturnUsedVersion() {
-	version := "v1.0.0"
-	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
-	d.files(map[string][]byte{
-		fmt.Sprintf("/tmp/tfenv/%s/terraform", version): []byte("fake"),
-	})
-	err := sut.Use(version)
-	d.NoError(err)
-	currentVersion, err := sut.CurrentVersion()
-	d.NoError(err)
-	d.Equal(version, *currentVersion)
-}
-
-func (d *downloadableEnvSuite) TestGetCurrentBeforeUseShouldReturnNil() {
-	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
-	currentVersion, err := sut.CurrentVersion()
-	d.NoError(err)
-	d.Nil(currentVersion)
-}
-
-func (d *downloadableEnvSuite) TestCurrentBinaryPath_Installed() {
-	version := "v1.0.0"
-	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
-	d.files(map[string][]byte{
-		fmt.Sprintf("/tmp/tfenv/%s/terraform", version): []byte("fake"),
-	})
-	err := sut.Use(version)
-	d.NoError(err)
-	actual, err := sut.CurrentBinaryPath()
-	d.NoError(err)
-	d.NotNil(actual)
-	d.Equal(filepath.Join(string(filepath.Separator), "tmp", "tfenv", version, "terraform"), *actual)
-}
-
-func (d *downloadableEnvSuite) TestCurrentBinaryPath_Installed_Windows() {
-	stub := gostub.Stub(&pkg.Os, "windows")
-	defer stub.Reset()
-	version := "v1.0.0"
-	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
-	d.files(map[string][]byte{
-		fmt.Sprintf("/tmp/tfenv/%s/terraform.exe", version): []byte("fake"),
-	})
-	err := sut.Use(version)
-	d.NoError(err)
-	actual, err := sut.CurrentBinaryPath()
-	d.NoError(err)
-	d.NotNil(actual)
-	d.Equal(filepath.Join(string(filepath.Separator), "tmp", "tfenv", version, "terraform.exe"), *actual)
-}
-
-func (d *downloadableEnvSuite) TestCurrentBinaryPath_NotInstalled() {
-	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
-	actual, err := sut.CurrentBinaryPath()
-	d.NoError(err)
-	d.Nil(actual)
-}
-
-func (d *downloadableEnvSuite) TestInstall_AlreadyInstalled() {
-	version := "v1.0.0"
-	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
-	binaryPath := fmt.Sprintf("/tmp/tfenv/%s/terraform", version)
-	d.files(map[string][]byte{
-		binaryPath: []byte("fake"),
-	})
-	err := sut.Install(version)
-	d.NoError(err)
-	file, err := afero.ReadFile(d.mockFs, binaryPath)
-	d.NoError(err)
-	d.Equal("fake", string(file))
-}
-
 func (d *downloadableEnvSuite) TestInstall_DownloadUrl() {
 	version := "1.7.5"
-	sut, _ := pkg.NewDownloadableEnv("https://releases.hashicorp.com/terraform/{{ .Version }}/terraform_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip", "/tmp", "tfenv", "terraform", nil)
+	sut, _ := pkg.NewDownloadInstaller("https://releases.hashicorp.com/terraform/{{ .Version }}/terraform_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip", nil)
 	d.Equal(fmt.Sprintf("https://releases.hashicorp.com/terraform/%s/terraform_%s_%s_%s.zip", version, version, runtime.GOOS, runtime.GOARCH), sut.DownloadUrl(version))
 }
 
@@ -240,7 +72,7 @@ func (d *downloadableEnvSuite) TestIncorrectDownloadUrlTemplateShouldReturnError
 	for _, c := range incorrectCases {
 		cc := c
 		d.Run(cc.desc, func() {
-			_, err := pkg.NewDownloadableEnv(cc.url, "/tmp", "tfenv", "terraform", nil)
+			_, err := pkg.NewDownloadInstaller(cc.url, nil)
 			d.NotNil(err)
 		})
 	}
@@ -249,7 +81,7 @@ func (d *downloadableEnvSuite) TestIncorrectDownloadUrlTemplateShouldReturnError
 
 func TestInstall_Install(t *testing.T) {
 	version := "1.7.5"
-	sut, _ := pkg.NewDownloadableEnv("https://releases.hashicorp.com/terraform/{{ .Version }}/terraform_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip", "/tmp", "tfenv", "terraform", nil)
+	sut, _ := pkg.NewDownloadInstaller("https://releases.hashicorp.com/terraform/{{ .Version }}/terraform_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip", context.Background())
 	defer func() {
 		_ = os.RemoveAll(filepath.Join("/tmp", "tfenv"))
 	}()
@@ -261,7 +93,7 @@ func TestInstall_Install(t *testing.T) {
 	_ = os.Remove(binaryPath)
 	_, err := os.Stat(binaryPath)
 	require.True(t, errors.Is(err, os.ErrNotExist))
-	err = sut.Install(version)
+	err = sut.Install(version, binaryPath)
 	require.NoError(t, err)
 	stat, err := os.Stat(binaryPath)
 	require.NoError(t, err)
@@ -276,34 +108,4 @@ func TestInstall_Install(t *testing.T) {
 	err = json.Unmarshal(output, &outputMap)
 	require.NoError(t, err)
 	assert.Equal(t, version, outputMap["terraform_version"])
-}
-
-func (d *downloadableEnvSuite) TestUninstall_Installed() {
-	version := "v1.0.0"
-	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
-	binaryPath := fmt.Sprintf("/tmp/tfenv/%s/terraform", version)
-	d.files(map[string][]byte{
-		binaryPath: []byte("fake"),
-	})
-	err := sut.Uninstall(version)
-	d.NoError(err)
-	exists, err := afero.Exists(d.mockFs, "/tmp/tfenv/v1.0.0/terraform")
-	require.NoError(d.T(), err)
-	d.False(exists)
-	exists, err = afero.Exists(d.mockFs, "/tmp/tfenv/v1.0.0")
-	require.NoError(d.T(), err)
-	d.False(exists)
-}
-
-func (d *downloadableEnvSuite) TestUninstall_NotInstalled() {
-	version := "v1.0.0"
-	sut, _ := pkg.NewDownloadableEnv("", "/tmp", "tfenv", "terraform", nil)
-	err := sut.Uninstall(version)
-	d.NoError(err)
-	exists, err := afero.Exists(d.mockFs, "/tmp/tfenv/v1.0.0/terraform")
-	require.NoError(d.T(), err)
-	d.False(exists)
-	exists, err = afero.Exists(d.mockFs, "/tmp/tfenv/v1.0.0")
-	require.NoError(d.T(), err)
-	d.False(exists)
 }

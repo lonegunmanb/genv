@@ -11,21 +11,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const MainTemplate = `package main
+const EnvMainTemplate = `package main
 
 import (
-    "{{ .Name }}/pkg"
 	"context"
 	"fmt"
 	"os"
 	"os/signal"
 
+    "github.com/lonegunmanb/genv/pkg"
 	"github.com/spf13/cobra"
 )
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
-	env, _ := pkg.NewDownloadableEnv("{{  .DownloadUrlTemplate }}", "{{ .HomeDir }}", "{{ .Name }}", "{{ .BinaryName }}", ctx)
+	installer, _ := pkg.NewDownloadInstaller("{{  .DownloadUrlTemplate }}", ctx)
+	env := pkg.NewEnv("{{ .HomeDir }}", "{{ .Name }}", "{{ .BinaryName }}", installer)
 
 	// Listen for interrupt signal (Ctrl + C) and cancel the context when received
 	c := make(chan os.Signal, 1)
@@ -56,7 +57,7 @@ func main() {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			version := args[0]
 			fmt.Printf("Using version: %s\n", version)
-			return pkg.Use(env, version)
+			return env.Use(version)
 		},
 	}
 
@@ -83,7 +84,7 @@ func main() {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			version := args[0]
 			fmt.Printf("Uninstalling version: %s\n", version)
-			return pkg.Uninstall(env, version)
+			return env.Uninstall(version)
 		},
 	}
 
@@ -155,7 +156,7 @@ func main() {
 		Use:   "genv",
 		Short: "genv is a CLI tool for managing environments",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tplt, err := template.New("main").Parse(MainTemplate)
+			tplt, err := template.New("main").Parse(EnvMainTemplate)
 			if err != nil {
 				return err
 			}
@@ -163,7 +164,14 @@ func main() {
 			if err != nil {
 				return err
 			}
-			dst := filepath.Clean(filepath.Join(pwd, "..", "main.go"))
+			binaryEnvDir := filepath.Join(pwd, "..", name)
+			if _, err = os.Stat(binaryEnvDir); os.IsNotExist(err) {
+				err = os.Mkdir(binaryEnvDir, 0755)
+				if err != nil {
+					return err
+				}
+			}
+			dst := filepath.Clean(filepath.Join(binaryEnvDir, "main.go"))
 			file, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 			if err != nil {
 				return err
@@ -218,16 +226,28 @@ func main() {
 				return err
 			}
 
-			err = replaceFirstLine(fmt.Sprintf("module %s", name))
-			if err != nil {
-				return err
-			}
+			//err = replaceFirstLine(fmt.Sprintf("module %s", name))
+			//if err != nil {
+			//	return err
+			//}
 			// Run 'go install' in the root folder
+			goModInitCmd := exec.Command("go", "mod", "init", binaryName)
+			goModInitCmd.Dir = binaryEnvDir
+			err = goModInitCmd.Run()
+			if err != nil {
+				return fmt.Errorf("failed to run 'go mod init' in the env folder: %w", err)
+			}
+			goModTidyCmd := exec.Command("go", "mod", "tidy")
+			goModTidyCmd.Dir = binaryEnvDir
+			err = goModTidyCmd.Run()
+			if err != nil {
+				return fmt.Errorf("failed to run 'go mod tidy' in the env folder: %w", err)
+			}
 			installCmd := exec.Command("go", "install")
-			installCmd.Dir = filepath.Join(pwd, "..")
+			installCmd.Dir = binaryEnvDir
 			err = installCmd.Run()
 			if err != nil {
-				return fmt.Errorf("failed to run 'go install' in the root folder: %w", err)
+				return fmt.Errorf("failed to run 'go install' in the env folder: %w", err)
 			}
 
 			// Run 'go install' in the ../{name} folder

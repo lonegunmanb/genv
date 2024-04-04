@@ -1,4 +1,4 @@
-module github.com/lonegunmanb/genv
+module github.com/lonegunmanb/genv/pkg
 
 go 1.22
 
