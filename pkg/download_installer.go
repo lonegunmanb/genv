@@ -4,17 +4,29 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	getter2 "github.com/hashicorp/go-getter/v2"
 	"path/filepath"
 	"runtime"
 	"text/template"
+	"time"
 
+	getter2 "github.com/hashicorp/go-getter/v2"
 	"github.com/spf13/afero"
 )
 
 var _ Installer = &DownloadInstaller{}
 var Fs = afero.NewOsFs()
 var Os = runtime.GOOS
+
+func init() {
+	for _, g := range getter2.Getters {
+		h, ok := g.(*getter2.HttpGetter)
+		if !ok {
+			continue
+		}
+		h.HeadFirstTimeout = time.Duration(0)
+		h.ReadTimeout = time.Duration(0)
+	}
+}
 
 type downloadArgument struct {
 	Version string
