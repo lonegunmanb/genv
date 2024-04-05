@@ -1,5 +1,7 @@
 package pkg
 
+import "fmt"
+
 var _ Installer = &fallbackInstaller{}
 
 type fallbackInstaller struct {
@@ -10,6 +12,7 @@ type fallbackInstaller struct {
 func (f *fallbackInstaller) Install(version string, dstPath string) error {
 	err := f.i1.Install(version, dstPath)
 	if err != nil {
+		fmt.Printf("fallback to gobuild %s: %s\n", version, err.Error())
 		return f.i2.Install(version, dstPath)
 	}
 	return nil

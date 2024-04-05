@@ -43,18 +43,23 @@ func (g *GoBuildInstaller) Install(version string, dstPath string) error {
 		src = fmt.Sprintf("%s?ref=%s", g.repoUrl, version)
 	}
 	src = fmt.Sprintf("git::%s", src)
+	fmt.Printf("Go build %s\n", g.repoUrl)
 	_, err := getter2.Get(g.ctx, tmpDir, src)
 	if err != nil {
+		fmt.Printf("Failed to clone %s: %s\n", g.repoUrl, err.Error())
 		return err
 	}
+	fmt.Printf("go mod download at %s\n", tmpDir)
 	err = executeCommand(tmpDir, "go", "mod", "download")
 	if err != nil {
+		fmt.Printf("Failed to download go mod at %s: %s\n", tmpDir, err.Error())
 		return err
 	}
 	args := []string{"build", "-o", fmt.Sprintf(filepath.Join(dstPath, g.binaryName))}
 	if g.subPath != "" {
 		args = append(args, g.subPath)
 	}
+	fmt.Printf("go build -o %s\n", args[2])
 	return executeCommand(tmpDir, "go", args...)
 }
 

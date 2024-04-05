@@ -24,7 +24,7 @@ import (
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
-	installer, _ := pkg.NewDownloadInstaller("{{  .DownloadUrlTemplate }}", ctx)
+	downloadInstaller, _ := pkg.NewDownloadInstaller("{{  .DownloadUrlTemplate }}", ctx)
 	goBuildInstaller := pkg.NewGoBuildInstaller("{{ .GoBuildRepoUrl }}", "{{ .BinaryName }}", "{{ .GoBuildSubFolder }}", ctx)
 	fallbackInstaller := pkg.NewFallbackInstaller(downloadInstaller, goBuildInstaller)
 	env := pkg.NewEnv("{{ .HomeDir }}", "{{ .Name }}", "{{ .BinaryName }}", fallbackInstaller)
@@ -151,7 +151,7 @@ func main() {
 `
 
 func main() {
-	var downloadUrlTemplate, homeDir, name, binaryName string
+	var downloadUrlTemplate, homeDir, name, binaryName, gitRepo, gitSubFolder string
 
 	var cmd = &cobra.Command{
 		Use:   "genv",
@@ -193,6 +193,8 @@ func main() {
 				HomeDir:             homeDir,
 				Name:                name,
 				BinaryName:          binaryName,
+				GoBuildRepoUrl:      gitRepo,
+				GoBuildSubFolder:    gitSubFolder,
 			}
 			err = tplt.Execute(file, envData)
 			if err != nil {
@@ -257,8 +259,8 @@ func main() {
 	cmd.Flags().StringVarP(&homeDir, "dir", "d", "", "Home directory")
 	cmd.Flags().StringVarP(&name, "name", "n", "", "Environment name")
 	cmd.Flags().StringVarP(&binaryName, "binary", "b", "", "Binary name")
-	cmd.Flags().StringVarP(&binaryName, "git-repo", "gr", "", "Git Repository URL for Go build installer")
-	cmd.Flags().StringVarP(&binaryName, "git-sub-folder", "gsf", "", "SubFolder For Go build installer")
+	cmd.Flags().StringVarP(&gitRepo, "git-repo", "", "", "Git Repository URL for Go build installer")
+	cmd.Flags().StringVarP(&gitSubFolder, "git-sub-folder", "", "", "SubFolder For Go build installer")
 
 	if err := cmd.Execute(); err != nil {
 		fmt.Println("Error executing command:", err)

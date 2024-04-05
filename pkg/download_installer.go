@@ -3,6 +3,7 @@ package pkg
 import (
 	"bytes"
 	"context"
+	"fmt"
 	getter2 "github.com/hashicorp/go-getter/v2"
 	"path/filepath"
 	"runtime"
@@ -46,6 +47,7 @@ func NewDownloadInstaller(downloadUrlTemplate string, ctx context.Context) (*Dow
 }
 
 func (d *DownloadInstaller) Install(version string, dstPath string) error {
+	fmt.Printf("Downloading %s\n", d.DownloadUrl(version))
 	_, err := getter2.DefaultClient.Get(d.ctx, &getter2.Request{
 		Src:             d.DownloadUrl(version),
 		Dst:             filepath.Dir(dstPath),
@@ -53,6 +55,9 @@ func (d *DownloadInstaller) Install(version string, dstPath string) error {
 		Copy:            true,
 		DisableSymlinks: true,
 	})
+	if err != nil {
+		fmt.Printf("Failed to download %s: %s\n", d.DownloadUrl(version), err.Error())
+	}
 	return err
 }
 
