@@ -246,41 +246,59 @@ func (d *envSuite) TestInstall_AlreadyInstalled() {
 	d.Equal("fake", string(file))
 }
 
-//func TestEnvUseShouldCheckInstalled(t *testing.T) {
-//	version := "v0.1.0"
-//	ctrl := gomock.NewController(t)
-//	defer ctrl.Finish()
-//	env := NewMockEnv(ctrl)
-//	env.EXPECT().Installed(gomock.Eq(version)).Times(1).Return(false, nil)
-//	env.EXPECT().Install(gomock.Eq(version)).Times(1).Return(nil)
-//	env.EXPECT().Use(gomock.Eq(version)).Times(1).Return(nil)
-//
-//	err := pkg.Use(env, version)
-//	assert.NoError(t, err)
-//}
-//
-//func TestEnvShouldUseEmptyVersionAfterUninstallCurrentVersion(t *testing.T) {
-//	version := "v0.1.0"
-//	ctrl := gomock.NewController(t)
-//	defer ctrl.Finish()
-//	env := NewMockEnv(ctrl)
-//	env.EXPECT().CurrentVersion().Times(1).Return(&version, nil)
-//	env.EXPECT().Uninstall(gomock.Eq(version)).Times(1).Return(nil)
-//	env.EXPECT().Use("").Times(1).Return(nil)
-//
-//	err := pkg.Uninstall(env, version)
-//	assert.NoError(t, err)
-//}
-//
-//func TestEnvShouldNotUseEmptyVersionAfterUninstallNonCurrentVersion(t *testing.T) {
-//	currentVersion := "v0.1.0"
-//	uninstalledVersion := "v0.1.1"
-//	ctrl := gomock.NewController(t)
-//	defer ctrl.Finish()
-//	env := NewMockEnv(ctrl)
-//	env.EXPECT().CurrentVersion().Times(1).Return(&currentVersion, nil)
-//	env.EXPECT().Uninstall(gomock.Eq(uninstalledVersion)).Times(1).Return(nil)
-//
-//	err := pkg.Uninstall(env, uninstalledVersion)
-//	assert.NoError(t, err)
-//}
+func (d *envSuite) TestListInstalled() {
+	cases := []struct {
+		desc     string
+		files    map[string][]byte
+		expected []string
+	}{
+		{
+			desc: "tags_installed",
+			files: map[string][]byte{
+				"/tmp/tfenv/v1.0.0/terraform": []byte("fake"),
+				"/tmp/tfenv/v1.1.0/terraform": []byte("fake"),
+			},
+			expected: []string{
+				"v1.0.0",
+				"v1.1.0",
+			},
+		},
+		{
+			desc: "git_hash_installed",
+			files: map[string][]byte{
+				"/tmp/tfenv/6eb8fcfb3d7bf1ade345b7d1bd432dadab8f8ad1/terraform": []byte("fake"),
+				"/tmp/tfenv/c05e704f072ce244170d80b0d7abb09c86def826/terraform": []byte("fake"),
+			},
+			expected: []string{
+				"6eb8fcfb3d7bf1ade345b7d1bd432dadab8f8ad1",
+				"c05e704f072ce244170d80b0d7abb09c86def826",
+			},
+		},
+		{
+			desc: "hybrid_installed",
+			files: map[string][]byte{
+				"/tmp/tfenv/v1.0.0/terraform":                                   []byte("fake"),
+				"/tmp/tfenv/c05e704f072ce244170d80b0d7abb09c86def826/terraform": []byte("fake"),
+			},
+			expected: []string{
+				"c05e704f072ce244170d80b0d7abb09c86def826",
+				"v1.0.0",
+			},
+		},
+		{
+			desc:     "not_installed",
+			files:    map[string][]byte{},
+			expected: nil,
+		},
+	}
+	for _, c := range cases {
+		cc := c
+		d.Run(cc.desc, func() {
+			d.files(cc.files)
+			sut := pkg.NewEnv("/tmp", "tfenv", "terraform", nil)
+			installed, err := sut.ListInstalled()
+			d.NoError(err)
+			d.Equal(cc.expected, installed)
+		})
+	}
+}

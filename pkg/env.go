@@ -98,6 +98,9 @@ func (env *Env) ListInstalled() ([]string, error) {
 	var installed []string
 	dir, err := afero.ReadDir(Fs, filepath.Dir(env.profilePath()))
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	for _, info := range dir {

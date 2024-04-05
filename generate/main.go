@@ -96,9 +96,16 @@ func main() {
 	var cmdList = &cobra.Command{
 		Use:   "list",
 		Short: "List all installed versions",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Println("Listing all installed versions")
-			// Implement the logic to list all installed versions here
+			installed, err := env.ListInstalled()
+			if err != nil {
+				return err
+			}
+			for _, i := range installed {
+				fmt.Println(i)
+			}
+			return nil
 		},
 	}
 
