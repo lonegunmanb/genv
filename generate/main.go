@@ -97,7 +97,6 @@ func main() {
 		Use:   "list",
 		Short: "List all installed versions",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("Listing all installed versions")
 			installed, err := env.ListInstalled()
 			if err != nil {
 				return err
