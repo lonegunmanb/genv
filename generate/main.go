@@ -27,7 +27,11 @@ func main() {
 	downloadInstaller, _ := pkg.NewDownloadInstaller("{{  .DownloadUrlTemplate }}", ctx)
 	goBuildInstaller := pkg.NewGoBuildInstaller("{{ .GoBuildRepoUrl }}", "{{ .BinaryName }}", "{{ .GoBuildSubFolder }}", ctx)
 	fallbackInstaller := pkg.NewFallbackInstaller(downloadInstaller, goBuildInstaller)
-	env := pkg.NewEnv("{{ .HomeDir }}", "{{ .Name }}", "{{ .BinaryName }}", fallbackInstaller)
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err.Error())
+	}
+	env := pkg.NewEnv(homeDir, "{{ .Name }}", "{{ .BinaryName }}", fallbackInstaller)
 
 	// Listen for interrupt signal (Ctrl + C) and cancel the context when received
 	c := make(chan os.Signal, 1)
@@ -151,7 +155,7 @@ func main() {
 `
 
 func main() {
-	var downloadUrlTemplate, homeDir, name, binaryName, gitRepo, gitSubFolder string
+	var downloadUrlTemplate, name, binaryName, gitRepo, gitSubFolder string
 
 	var cmd = &cobra.Command{
 		Use:   "genv",
@@ -183,14 +187,12 @@ func main() {
 			}()
 			envData := struct {
 				DownloadUrlTemplate string
-				HomeDir             string
 				Name                string
 				BinaryName          string
 				GoBuildSubFolder    string
 				GoBuildRepoUrl      string
 			}{
 				DownloadUrlTemplate: downloadUrlTemplate,
-				HomeDir:             homeDir,
 				Name:                name,
 				BinaryName:          binaryName,
 				GoBuildRepoUrl:      gitRepo,
@@ -256,7 +258,6 @@ func main() {
 	}
 
 	cmd.Flags().StringVarP(&downloadUrlTemplate, "url", "u", "", "Download URL template")
-	cmd.Flags().StringVarP(&homeDir, "dir", "d", "", "Home directory")
 	cmd.Flags().StringVarP(&name, "name", "n", "", "Environment name")
 	cmd.Flags().StringVarP(&binaryName, "binary", "b", "", "Binary name")
 	cmd.Flags().StringVarP(&gitRepo, "git-repo", "", "", "Git Repository URL for Go build installer")
