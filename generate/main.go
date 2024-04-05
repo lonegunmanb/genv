@@ -25,7 +25,9 @@ import (
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	installer, _ := pkg.NewDownloadInstaller("{{  .DownloadUrlTemplate }}", ctx)
-	env := pkg.NewEnv("{{ .HomeDir }}", "{{ .Name }}", "{{ .BinaryName }}", installer)
+	goBuildInstaller := pkg.NewGoBuildInstaller("{{ .GoBuildRepoUrl }}", "{{ .BinaryName }}", "{{ .GoBuildSubFolder }}", ctx)
+	fallbackInstaller := pkg.NewFallbackInstaller(downloadInstaller, goBuildInstaller)
+	env := pkg.NewEnv("{{ .HomeDir }}", "{{ .Name }}", "{{ .BinaryName }}", fallbackInstaller)
 
 	// Listen for interrupt signal (Ctrl + C) and cancel the context when received
 	c := make(chan os.Signal, 1)
@@ -184,6 +186,8 @@ func main() {
 				HomeDir             string
 				Name                string
 				BinaryName          string
+				GoBuildSubFolder    string
+				GoBuildRepoUrl      string
 			}{
 				DownloadUrlTemplate: downloadUrlTemplate,
 				HomeDir:             homeDir,
@@ -253,6 +257,8 @@ func main() {
 	cmd.Flags().StringVarP(&homeDir, "dir", "d", "", "Home directory")
 	cmd.Flags().StringVarP(&name, "name", "n", "", "Environment name")
 	cmd.Flags().StringVarP(&binaryName, "binary", "b", "", "Binary name")
+	cmd.Flags().StringVarP(&binaryName, "git-repo", "gr", "", "Git Repository URL for Go build installer")
+	cmd.Flags().StringVarP(&binaryName, "git-sub-folder", "gsf", "", "SubFolder For Go build installer")
 
 	if err := cmd.Execute(); err != nil {
 		fmt.Println("Error executing command:", err)

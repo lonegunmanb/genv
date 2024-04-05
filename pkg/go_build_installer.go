@@ -4,10 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
-	getter2 "github.com/hashicorp/go-getter/v2"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	getter2 "github.com/hashicorp/go-getter/v2"
 )
 
 var _ Installer = &GoBuildInstaller{}
@@ -19,7 +20,7 @@ type GoBuildInstaller struct {
 	binaryName string
 }
 
-func NewGoBuildInstaller(repoUrl string, binaryName string, subPath string, ctx context.Context) *GoBuildInstaller {
+func NewGoBuildInstaller(repoUrl string, binaryName string, subPath string, ctx context.Context) Installer {
 	if ctx == nil {
 		ctx = context.TODO()
 	}
