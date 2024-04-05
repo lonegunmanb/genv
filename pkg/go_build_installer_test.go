@@ -94,9 +94,10 @@ func (g *goBuildInstallerSuite) TestInstall() {
 				binary += ".exe"
 			}
 			installer := pkg.NewGoBuildInstaller(cc.repoUrl, binary, "", context.Background())
-			err := installer.Install(cc.version, g.outputFolder)
+			dstPath := filepath.Join(g.outputFolder, binary)
+			err := installer.Install(cc.version, dstPath)
 			g.NoError(err)
-			exist, err := fileExist(filepath.Join(g.outputFolder, binary))
+			exist, err := fileExist(dstPath)
 			g.NoError(err)
 			g.True(exist)
 		})

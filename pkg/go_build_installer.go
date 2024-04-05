@@ -55,7 +55,7 @@ func (g *GoBuildInstaller) Install(version string, dstPath string) error {
 		fmt.Printf("Failed to download go mod at %s: %s\n", tmpDir, err.Error())
 		return err
 	}
-	args := []string{"build", "-o", fmt.Sprintf(filepath.Join(dstPath, g.binaryName))}
+	args := []string{"build", "-o", dstPath}
 	if g.subPath != "" {
 		args = append(args, g.subPath)
 	}

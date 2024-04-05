@@ -1,6 +1,11 @@
 package pkg
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/Masterminds/semver/v3"
+)
 
 var _ Installer = &fallbackInstaller{}
 
@@ -10,10 +15,9 @@ type fallbackInstaller struct {
 }
 
 func (f *fallbackInstaller) Install(version string, dstPath string) error {
-	err := f.i1.Install(version, dstPath)
+	err := f.install(f.i1, version, dstPath)
 	if err != nil {
-		fmt.Printf("fallback to gobuild %s: %s\n", version, err.Error())
-		return f.i2.Install(version, dstPath)
+		return f.install(f.i2, version, dstPath)
 	}
 	return nil
 }
@@ -27,4 +31,22 @@ func NewFallbackInstaller(i1 Installer, i2 Installer) Installer {
 		i1: i1,
 		i2: i2,
 	}
+}
+
+func (f *fallbackInstaller) install(i Installer, version string, dstPath string) error {
+	_, err := semver.NewVersion(version)
+	isSemver := err == nil
+	if !isSemver {
+		return i.Install(version, dstPath)
+	}
+	err = i.Install(version, dstPath)
+	if err == nil {
+		return nil
+	}
+	if strings.HasPrefix(version, "v") {
+		version = version[1:]
+	} else {
+		version = fmt.Sprintf("v%s", version)
+	}
+	return i.Install(version, dstPath)
 }
