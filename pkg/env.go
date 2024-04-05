@@ -94,6 +94,20 @@ func (env *Env) Install(version string) error {
 	return env.Installer.Install(version, env.binaryPath(version))
 }
 
+func (env *Env) ListInstalled() ([]string, error) {
+	var installed []string
+	dir, err := afero.ReadDir(Fs, filepath.Dir(env.profilePath()))
+	if err != nil {
+		return nil, err
+	}
+	for _, info := range dir {
+		if info.IsDir() {
+			installed = append(installed, info.Name())
+		}
+	}
+	return installed, nil
+}
+
 func (env *Env) Name() string {
 	return env.name
 }
