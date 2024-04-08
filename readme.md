@@ -11,13 +11,12 @@ To use `genv`, follow the steps below:
 3. Run the `go run` command with the appropriate flags. For example:
 
 ```bash
-go run main.go -u "https://releases.hashicorp.com/vault/{{ .Version }}/vault_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip" -d /tmp -n vaultenv -b vault --git-repo https://github.com/hashicorp/vault.git 
+go run main.go -u "https://releases.hashicorp.com/vault/{{ .Version }}/vault_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip" -n vaultenv -b vault --git-repo https://github.com/hashicorp/vault.git 
 ```
 
 In this command:
 
 - `-u` specifies the download URL template.
-- `-d` specifies the home directory (the directory that been used to store config file and actual binaries).
 - `-n` specifies the control plane binary name.
 - `-b` specifies the binary name.
 - `--git-repo` specifies the github repository url when download install fail and fallback to use go build to install
