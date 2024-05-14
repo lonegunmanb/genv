@@ -29,7 +29,9 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@74483a38d39275f33fcff5f35b679b5ca4a26a99 #v2.22.5
       - name: Run tests
-        run: go test -v github.com/lonegunmanb/genv/...
+        run: |
+          go generate github.com/lonegunmanb/genv/...
+          go test -v github.com/lonegunmanb/genv/...
       - name: golangci-lint
         run: |
           docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:v1.57.2 golangci-lint run -v --timeout=3600s
