@@ -50,7 +50,7 @@ func (d *envSuite) TearDownSubTest() {
 
 func (d *envSuite) files(fs map[string][]byte) {
 	for k, v := range fs {
-		_ = afero.WriteFile(d.mockFs, k, v, os.FileMode(644))
+		_ = afero.WriteFile(d.mockFs, k, v, os.FileMode(0644))
 	}
 }
 

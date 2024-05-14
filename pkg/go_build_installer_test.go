@@ -8,13 +8,11 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/prashantv/gostub"
 	"github.com/stretchr/testify/suite"
 )
 
 type goBuildInstallerSuite struct {
 	suite.Suite
-	stub         *gostub.Stubs
 	outputFolder string
 }
 

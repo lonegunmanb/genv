@@ -47,12 +47,6 @@ func (d *downloadInstallerSuite) TearDownSubTest() {
 	d.TearDownTest()
 }
 
-func (d *downloadInstallerSuite) files(fs map[string][]byte) {
-	for k, v := range fs {
-		_ = afero.WriteFile(d.mockFs, k, v, os.FileMode(644))
-	}
-}
-
 func (d *downloadInstallerSuite) TestInstall_DownloadUrl() {
 	version := "1.7.5"
 	sut, _ := pkg.NewDownloadInstaller("https://releases.hashicorp.com/terraform/{{ .Version }}/terraform_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip", nil)
