@@ -28,9 +28,18 @@ func main() {
 	downloadInstaller, _ := pkg.NewDownloadInstaller("{{  .DownloadUrlTemplate }}", ctx)
 	goBuildInstaller := pkg.NewGoBuildInstaller("{{ .GoBuildRepoUrl }}", "{{ .BinaryName }}", "{{ .GoBuildSubFolder }}", ctx)
 	fallbackInstaller := pkg.NewFallbackInstaller(downloadInstaller, goBuildInstaller)
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err.Error())
+	var homeDir string
+	var err error
+	if homeDir = os.Getenv("{{ .UpperName }}_HOME_DIR"); homeDir != "" {
+		err = os.MkdirAll(homeDir, os.ModePerm)
+		if err != nil {
+			panic(err.Error())
+		}
+	} else {
+		homeDir, err = os.UserHomeDir()
+		if err != nil {
+			panic(err.Error())
+		}
 	}
 	env := pkg.NewEnv(homeDir, "{{ .Name }}", "{{ .BinaryName }}", fallbackInstaller)
 
