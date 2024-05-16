@@ -76,7 +76,7 @@ func main() {
 		},
 	}
 
-    var cmdBinaryPath = &cobra.Command{
+  var cmdBinaryPath = &cobra.Command{
 		Use:   "path",
 		Short: "Get the full path to current binary",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -169,8 +169,15 @@ func main() {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 
-	// Run the command
-	_ = cmd.Run()
+	// Run the command and pass through exit code
+	if err := cmd.Run(); err != nil {
+		var pe *exec.ExitError
+		if errors.As(err, &pe) {
+			os.Exit(pe.ExitCode())
+		}
+		os.Stderr.WriteString(fmt.Sprintf("Error executing command but could not get exit code: %s\n", err))
+		os.Exit(1)
+	}
 }
 
 func currentBinaryPath() (string, error) {
