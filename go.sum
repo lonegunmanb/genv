@@ -11,8 +11,8 @@ github.com/hashicorp/errwrap v1.0.0 h1:hLrqtEDnRye3+sgx6z4qVLNuviH3MR5aQ0ykNJa/U
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
 github.com/hashicorp/go-cleanhttp v0.5.0 h1:wvCrVc9TjDls6+YGAF2hAifE1E5U1+b4tH6KdvN3Gig=
 github.com/hashicorp/go-cleanhttp v0.5.0/go.mod h1:JpRdi6/HCYpAwUzNwuwqhbovhLtngrth3wmdIIUrZ80=
-github.com/hashicorp/go-getter/v2 v2.2.1 h1:2JXqPZs1Jej67RtdTi0YZaEB2hEFB3fkBA4cPYKQwFQ=
-github.com/hashicorp/go-getter/v2 v2.2.1/go.mod h1:EcJx6oZE8hmGuRR1l38QrfnyiujQbwsEAn11eHv6l2M=
+github.com/hashicorp/go-getter/v2 v2.2.2 h1:Al5bzCNW5DrlZMK6TumGrSue7Xz8beyLcen+4N4erwo=
+github.com/hashicorp/go-getter/v2 v2.2.2/go.mod h1:hp5Yy0GMQvwWVUmwLs3ygivz1JSLI323hdIE9J9m7TY=
 github.com/hashicorp/go-multierror v1.1.0 h1:B9UzwGQJehnUY1yNrnwREHc3fGbC2xefo8g4TbElacI=
 github.com/hashicorp/go-multierror v1.1.0/go.mod h1:spPvp8C1qA32ftKqdAHm4hHTbPw+vmowP0z+KUhOZdA=
 github.com/hashicorp/go-safetemp v1.0.0 h1:2HR189eFNrjHQyENnQMMpCiBAsRxzbTMIgBhEyExpmo=
