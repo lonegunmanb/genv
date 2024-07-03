@@ -168,6 +168,7 @@ func main() {
 	// Set the command's Stdin and Stdout to the main process's Stdin and Stdout
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
+        cmd.Stderr = os.Stderr
 
 	// Run the command and pass through exit code
 	if err := cmd.Run(); err != nil {
