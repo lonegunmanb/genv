@@ -17,7 +17,7 @@ require (
 )
 
 require (
-	github.com/Masterminds/semver/v3 v3.2.1
+	github.com/Masterminds/semver/v3 v3.3.0
 	github.com/hashicorp/go-getter/v2 v2.2.2
 	github.com/spf13/cobra v1.8.1
 	github.com/xianic/fslock v1.0.1
