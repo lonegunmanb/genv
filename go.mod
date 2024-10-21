@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/prashantv/gostub v1.1.0
 	github.com/spf13/afero v1.11.0
-	go.uber.org/mock v0.4.0
+	go.uber.org/mock v0.5.0
 	golang.org/x/text v0.14.0 // indirect
 )
 
