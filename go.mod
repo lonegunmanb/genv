@@ -4,9 +4,9 @@ go 1.22
 
 require (
 	github.com/prashantv/gostub v1.1.0
-	github.com/spf13/afero v1.11.0
+	github.com/spf13/afero v1.12.0
 	go.uber.org/mock v0.5.0
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 )
 
 require (
@@ -36,5 +36,5 @@ require (
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/ulikunitz/xz v0.5.8 // indirect
-	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
 )
